@@ -1,0 +1,5 @@
+[repo]
+upstream_urls = [
+  'git@github.com:WorldWideTelescope/wwt_kernel_data_relay.git',
+  'https://github.com/WorldWideTelescope/wwt_kernel_data_relay.git',
+]

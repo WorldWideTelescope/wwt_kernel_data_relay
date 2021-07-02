@@ -1,0 +1,6 @@
+[report]
+omit = wwt_kernel_data_relay/*tests/*
+exclude_lines =
+              pragma: no cover
+              if __name__ == .__main__.:
+              raise NotImplementedError
