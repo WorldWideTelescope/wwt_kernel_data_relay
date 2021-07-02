@@ -5,22 +5,34 @@
 The WWT kernel data relay Jupyter notebook server extension.
 """
 
+from queue import Empty
+
 from tornado import gen
 
 from jupyter_client.session import Session
 from notebook.utils import url_path_join
 from notebook.base.handlers import IPythonHandler
+from traitlets.config.configurable import LoggingConfigurable
 
 __all__ = ['load_jupyter_server_extension']
 
 
-class Registry(object):
+class Registry(LoggingConfigurable):
     """
     A registry of kernels that have expressed an interest in publishing data files.
     """
 
     def __init__(self):
         self._key_to_kid = {}
+
+    def log_debug(self, fmt, *args):
+        self.log.debug('wwt_kernel_data_relay | ' + fmt, *args)
+
+    def log_info(self, fmt, *args):
+        self.log.info('wwt_kernel_data_relay | ' + fmt, *args)
+
+    def log_warning(self, fmt, *args):
+        self.log.warning('wwt_kernel_data_relay | ' + fmt, *args)
 
     def watch_new_kernel(self, kernel_id, km):
         session = Session(
@@ -29,7 +41,7 @@ class Registry(object):
         )
 
         stream = km.connect_iopub()
-        print('WWTKDR: watching kernel', kernel_id)
+        self.log_debug('watching kernel %s', kernel_id)
 
         def watch_iopubs(msg_list):
             idents, fed_msg_list = session.feed_identities(msg_list)
@@ -40,9 +52,9 @@ class Registry(object):
                 key = msg['content'].get('key')
 
                 if not key:
-                    print('WWTKDR: missing/empty key in claim?')
+                    self.log_warning('missing/empty key specified in claim by kernel %s', kernel_id)
                 else:
-                    print(f'WWTKDR: key {key} claimed by kernel {kernel_id}')
+                    self.log_debug('key %s claimed by kernel %s', key, kernel_id)
                     self._key_to_kid[key] = kernel_id
 
         stream.on_recv(watch_iopubs)
@@ -59,18 +71,12 @@ class DataRequestHandler(IPythonHandler):
     def get(self, key, entry):
         authenticated = bool(self.current_user)
 
-        print('************* WWTKDR HANDLER *****************')
-        print('auth:', authenticated)
-        print('key:', key)
-        print('entry:', entry)
-
         kernel_id = self.registry.get(key)
         if kernel_id is None:
             self.clear()
             self.set_status(404)
             self.finish(f'unrecognized WWTKDR key {key!r}')
             return
-        print('kernel_id:', kernel_id)
 
         try:
             km = self.kernel_manager.get_kernel(kernel_id)
@@ -80,38 +86,60 @@ class DataRequestHandler(IPythonHandler):
             self.finish(f'could not get kernel for WWTKDR key {key!r}: {e}')
             return
 
+        self.registry.log_debug(
+            'GET key=%s kernel_id=%s entry=%s authenticated=%s',
+            key, kernel_id, entry, authenticated,
+        )
+
         kc = km.client()
 
         content = dict(
             method = 'GET',
+            authenticated = authenticated,
             entry = entry,
         )
         msg = kc.session.msg('wwtkdr_resource_request', content)
         msg_id = msg['header']['msg_id']
         kc.shell_channel.send(msg)
-        self.clear()
-        self.set_header('Content-Type', 'image/png') # XXXXXXXXXX
 
-        while True:
-            reply = yield kc.get_shell_msg(timeout=30)
-            print('============= reply:')
-            print(reply)
-            print('====================')
+        self.clear()
+        first = True
+        keep_going = True
+
+        while keep_going:
+            try:
+                reply = yield kc.get_shell_msg(timeout=10)
+            except Empty:
+                self.clear()
+                self.set_status(500)
+                msg = content.get('evalue', 'incomplete or missing reponse from kernel')
+                self.finish(msg)
+                return
 
             if reply['parent_header'].get('msg_id') != msg_id:
-                print('** not my message')
-                continue
+                continue  # not my message
 
-            status = reply['content'].get('status', 'unspecified')
+            content = reply['content']
+            status = content.get('status', 'unspecified')
+
             if status != 'ok':
-                raise HTTPError(500)
+                self.clear()
+                self.set_status(500)
+                msg = content.get('evalue', 'unspecified kernel error')
+                self.finish(msg)
+                return
 
-            if not len(reply['buffers']):
-                break
+            if first:
+                self.set_status(content['http_status'])
+                self.set_header('Content-Type', content['content_type'])
+                first = False
 
-            self.write(bytes(reply['buffers'][0]))
+            keep_going = content['more'] and len(reply['buffers'])
 
-        self.finish(b'')
+            for buf in reply['buffers']:
+                self.write(bytes(buf))
+
+        self.finish()
 
 
 def load_jupyter_server_extension(nb_server_app):
@@ -126,7 +154,8 @@ def load_jupyter_server_extension(nb_server_app):
     host_pattern = '.*$'
     route_pattern = url_path_join(web_app.settings['base_url'], '/wwtkdr/([^/]*)/(.*)')
 
-    # The registry of kernels and URL "keys"
+    # The registry of kernels and URL "keys". Also slightly overloaded to
+    # contain our logger.
 
     registry = Registry()
 
@@ -140,6 +169,7 @@ def load_jupyter_server_extension(nb_server_app):
     # URL prefix, we need to shim ourselves into the kernel startup framework
     # and register a message listener.
 
+    registry.log_info('shimming into notebook startup')
     app_km = nb_server_app.kernel_manager
     orig_start_watching_activity = app_km.start_watching_activity
 

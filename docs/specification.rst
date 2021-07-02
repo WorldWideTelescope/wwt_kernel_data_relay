@@ -5,7 +5,10 @@ WWT KDR Protocol Specification
 ==============================
 
 This document specifies the interactions between the WWT kernel data relay (KDR)
-and various Jupyter kernels that use it to publish data.
+and various Jupyter kernels that use it to publish data. The reference kernel
+implmentation is found in `pywwt`_.
+
+.. _pywwt: https://github.com/WorldWideTelescope/pywwt/
 
 
 URL Structure
@@ -45,10 +48,10 @@ A kernel can claim a URL key by publishing a message of type
 ``wwtkdr_claim_key`` on its `IOPub socket`_. The message content should have the
 form:
 
-.. code-block:: json
+.. code-block::
 
   {
-    'key': $key
+    'key': $key:str
   }
 
 Where ``$key`` is the key being claimed by the kernel. This value should not be
@@ -60,16 +63,76 @@ empty and it should *not* be URL-escaped.
 Requesting Resources
 ====================
 
-When the server receives a request for a KDR URL path, the key will be used to
-map the request to a specific kernel. That kernel will be sent a message on its
+When the server receives an HTTP request for a KDR URL path, the key will be
+used to map the request to a specific kernel. If the key is unregistered, or if
+it is associated with a dead kernel, the requestor will receive a 404 error.
+
+On a valid HTTP GET request, the associated kernel will be sent a message on its
 `shell socket`_ of type ``wwtkdr_resource_request`` with the following content
 structure:
 
 .. _shell socket: https://jupyter-client.readthedocs.io/en/stable/messaging.html
 
-.. code-block:: json
+.. code-block::
 
   {
     'method': 'GET',
-    'entry': $entry,
+    'authenticated': $authenticated:bool,
+    'entry': $entry:str
   }
+
+The ``$entry`` string identifies the resource being requested. The relay is not
+responsible for, or capable of, checking its validity. The value is merely
+extracted from the URL and relayed to the kernel.
+
+The ``$authenticated`` boolean indicates whether the request is coming from an
+authenticated client, as determined by the Tornado framework. It is up to the
+kernel to determine if unauthenticated users should be allowed to access the
+resources that it publishes.
+
+The kernel should reply on its shell socket with one or more messages of type
+``wwtkdr_resource_reply``. While every reply message must contain some baseline
+JSON content, the *first* reply message must contain additional fields
+(analogous to HTTP header data). Every reply message, except for the last one,
+must also be associated with one or more byte buffers, which contain the
+resource binary content to be returned to the client that has connected to the
+notebook server. The final reply message is allowed to arrive without any
+associated buffers.
+
+The JSON content of the *every* reply message should contain the following fields:
+
+.. code-block::
+
+  {
+    'status': $status:str,
+    'more': $more:bool
+  }
+
+Furthermore, the JSON content of the *first* reply message should contain the
+following additional fields:
+
+.. code-block::
+
+  {
+    'http_status': $httpStatus:int,
+    'content_type': $contentType:str
+  }
+
+The ``$status`` field is a Jupyter messaging status indicator. It should be
+``"ok"`` if the request was processed successfully (even if the resulting HTTP
+status is an error status). If an error was encountered, the value should be
+``"error"``, and the structure of the reply should be as described in `the
+jupyter_client documentation`_. The value of the ``evalue`` JSON field, if
+present, will be relayed to the requestor as part of an HTTP 500 error.
+
+.. _the jupyter_client documentation: https://jupyter-client.readthedocs.io/en/stable/messaging.html#request-reply
+
+The ``$more`` field indicates whether more reply messages will be sent. If your
+implementation doesn't "know" when the last reply will be sent until all data
+have been transferred, send a final message with no associated byte buffers.
+
+On the first reply, the ``$httpStatus`` field should give an HTTP status code that
+will be relayed to the requesting client.
+
+The ``$contentType`` field should give a value for the HTTP ``Content-Type``
+header.
