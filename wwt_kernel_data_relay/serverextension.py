@@ -131,7 +131,8 @@ class DataRequestHandler(IPythonHandler):
 
             if first:
                 self.set_status(content['http_status'])
-                self.set_header('Content-Type', content['content_type'])
+                for name, value in content['http_headers']:
+                    self.set_header(name, value)
                 first = False
 
             keep_going = content['more'] and len(reply['buffers'])

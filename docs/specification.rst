@@ -115,7 +115,7 @@ following additional fields:
 
   {
     'http_status': $httpStatus:int,
-    'content_type': $contentType:str
+    'http_headers': $httpHeaders:list<[str, str]>,
   }
 
 The ``$status`` field is a Jupyter messaging status indicator. It should be
@@ -131,8 +131,8 @@ The ``$more`` field indicates whether more reply messages will be sent. If your
 implementation doesn't "know" when the last reply will be sent until all data
 have been transferred, send a final message with no associated byte buffers.
 
-On the first reply, the ``$httpStatus`` field should give an HTTP status code that
-will be relayed to the requesting client.
-
-The ``$contentType`` field should give a value for the HTTP ``Content-Type``
-header.
+On the first reply, the ``$httpStatus`` field should give an HTTP status code
+that will be relayed to the requesting client. The ``$httpHeaders`` field should
+be a list of sub-lists, each sub-list consisting of two strings: an HTTP header
+name and a header value. These will be included in the HTTP response issued by
+the relay, and should include fields such as ``Content-Type``.
