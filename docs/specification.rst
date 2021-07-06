@@ -78,8 +78,14 @@ structure:
   {
     'method': 'GET',
     'authenticated': $authenticated:bool,
+    'key': $key:str,
     'entry': $entry:str
   }
+
+The ``$key`` string provides the key of the request URL. Because a kernel can
+claim more than one key, it is needed for disambiguation. The key value has been
+decoded: if the literal URL text is ``my%2Fkey``, the value if ``$key`` will be
+``my/key``.
 
 The ``$entry`` string identifies the resource being requested. The relay is not
 responsible for, or capable of, checking its validity. The value is merely

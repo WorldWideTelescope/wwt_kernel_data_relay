@@ -96,6 +96,7 @@ class DataRequestHandler(IPythonHandler):
         content = dict(
             method = 'GET',
             authenticated = authenticated,
+            key = key,
             entry = entry,
         )
         msg = kc.session.msg('wwtkdr_resource_request', content)
