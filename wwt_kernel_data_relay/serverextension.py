@@ -25,6 +25,7 @@ class Registry(LoggingConfigurable):
     def __init__(self):
         self._kid_to_session = {}
         self._key_to_kid = {}
+        self._mid_to_buffer = {}
 
     def log_debug(self, fmt, *args):
         self.log.debug('wwt_kernel_data_relay | ' + fmt, *args)
@@ -66,6 +67,71 @@ class Registry(LoggingConfigurable):
 
     def get_session(self, kernel_id):
         return self._kid_to_session.get(kernel_id)
+
+    async def get_next_reply(self, msg_id, kc):
+        """
+        Get the next reply to one of our messages.
+
+        This has to be centralized in the registry because we might retrieve
+        replies to *other* requests, which need to be buffered so that those
+        handlers get the data they need.
+
+        This will raise queue.Empty if there really seems to be no next reply.
+
+        """
+        tries = 0
+
+        while True:
+            # Has a buffered message shown up? Note that even if our call to
+            # get_shell_msg() raises an Empty error, someone *else* might have
+            # gotten a message and buffered it while we were waiting.
+            buffer = self._mid_to_buffer.get(msg_id)
+            if buffer:
+                return buffer.pop(0)
+
+            # Nothing in our private buffer. Ask the kernel client.
+            #
+            # Depending on where we're being run, our kernel client may or may
+            # not be async. I'm not aware of a way to ensure that the client is
+            # async, so we just hackily try to handle both forms. Either the
+            # get_shell_msg or the await might raise the queue.Empty error.
+            try:
+                reply = kc.get_shell_msg(timeout=1)
+                if not isinstance(reply, dict):
+                    reply = await reply
+            except Empty:
+                # It's possible that someone buffered up a reply for us while we
+                # were waiting. But if we start waiting too long, give up.
+                tries += 1
+
+                if tries < 30:
+                    continue
+                else:
+                    raise
+
+            # OK, we got a reply. Is it for us?
+            reply_mid = reply['parent_header'].get('msg_id')
+            if reply_mid == msg_id:
+                return reply  # yes! All done.
+
+            # If we're still here, we got a reply to someone *else*'s message.
+            # Buffer it up, if possible.
+            if reply_mid is None:
+                self.log_warning('dropping message on floor because it has no parent_id: %s', reply)
+            else:
+                buffer = self._mid_to_buffer.setdefault(reply_mid, [])
+                buffer.append(reply)
+
+        # we never break out of the loop.
+
+    def finish_reply_buffering(self, msg_id):
+        """
+        A helper to try to avoid unbounded growth of our reply buffer.
+        """
+        try:
+            del self._mid_to_buffer[msg_id]
+        except KeyError:
+            pass
 
 
 class DataRequestHandler(IPythonHandler):
@@ -124,30 +190,27 @@ class DataRequestHandler(IPythonHandler):
         keep_going = True
 
         while keep_going:
+            # Get the next reply, using a centralized buffer to make sure that
+            # we don't drop anything on the floor when simultaneous requests are
+            # happening.
             try:
-                # Depending on where we're being run, our kernel client may or
-                # may not be async. I'm not aware of a way to ensure that the
-                # client is async
-                reply = kc.get_shell_msg(timeout=10)
-                if not isinstance(reply, dict):
-                    reply = await reply
+                reply = await self.registry.get_next_reply(msg_id, kc)
             except Empty:
+                self.registry.finish_reply_buffering(msg_id)
                 self.clear()
                 self.set_status(500)
                 self.registry.log_warning(
-                    'incomplete or missing response from kernel | key=%s entry=%s kernel_id=%s',
-                    key, entry, kernel_id,
+                    'incomplete or missing response from kernel | key=%s entry=%s kernel_id=%s msg_id=%s',
+                    key, entry, kernel_id, msg_id
                 )
                 self.finish('incomplete or missing response from kernel')
                 return
-
-            if reply['parent_header'].get('msg_id') != msg_id:
-                continue  # not my message
 
             content = reply['content']
             status = content.get('status', 'unspecified')
 
             if status != 'ok':
+                self.registry.finish_reply_buffering(msg_id)
                 self.clear()
                 self.set_status(500)
                 msg = content.get('evalue', 'unspecified kernel error')
@@ -169,6 +232,7 @@ class DataRequestHandler(IPythonHandler):
             for buf in reply['buffers']:
                 self.write(bytes(buf))
 
+        self.registry.finish_reply_buffering(msg_id)
         self.finish()
 
 
