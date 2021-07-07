@@ -92,6 +92,7 @@ class DataRequestHandler(IPythonHandler):
         except Exception as e:
             self.clear()
             self.set_status(404)
+            self.registry.log_warning(f'could not get kernel for WWTKDR key {key!r}: {e}')
             self.finish(f'could not get kernel for WWTKDR key {key!r}: {e}')
             return
 
@@ -128,8 +129,11 @@ class DataRequestHandler(IPythonHandler):
             except Empty:
                 self.clear()
                 self.set_status(500)
-                msg = content.get('evalue', 'incomplete or missing reponse from kernel')
-                self.finish(msg)
+                self.registry.log_warning(
+                    'incomplete or missing response from kernel | key=%s entry=%s kernel_id=%s',
+                    key, entry, kernel_id,
+                )
+                self.finish('incomplete or missing response from kernel')
                 return
 
             if reply['parent_header'].get('msg_id') != msg_id:
@@ -142,6 +146,10 @@ class DataRequestHandler(IPythonHandler):
                 self.clear()
                 self.set_status(500)
                 msg = content.get('evalue', 'unspecified kernel error')
+                self.registry.log_warning(
+                    'kernel internal error | %s | key=%s entry=%s kernel_id=%s',
+                    msg, key, entry, kernel_id,
+                )
                 self.finish(msg)
                 return
 
