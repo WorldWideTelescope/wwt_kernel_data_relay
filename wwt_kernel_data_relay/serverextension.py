@@ -23,6 +23,7 @@ class Registry(LoggingConfigurable):
     """
 
     def __init__(self):
+        self._kid_to_session = {}
         self._key_to_kid = {}
 
     def log_debug(self, fmt, *args):
@@ -41,7 +42,8 @@ class Registry(LoggingConfigurable):
         )
 
         stream = km.connect_iopub()
-        self.log_debug('watching kernel %s', kernel_id)
+        self._kid_to_session[kernel_id] = session
+        self.log_debug('watching kernel %s in session %s', kernel_id, session.session)
 
         def watch_iopubs(msg_list):
             idents, fed_msg_list = session.feed_identities(msg_list)
@@ -59,8 +61,11 @@ class Registry(LoggingConfigurable):
 
         stream.on_recv(watch_iopubs)
 
-    def get(self, key):
+    def get_kernel_id(self, key):
         return self._key_to_kid.get(key)
+
+    def get_session(self, kernel_id):
+        return self._kid_to_session.get(kernel_id)
 
 
 class DataRequestHandler(IPythonHandler):
@@ -80,7 +85,7 @@ class DataRequestHandler(IPythonHandler):
         # This also includes the normalizations mentioned above.
         url = self.request.full_url()
 
-        kernel_id = self.registry.get(key)
+        kernel_id = self.registry.get_kernel_id(key)
         if kernel_id is None:
             self.clear()
             self.set_status(404)
@@ -101,7 +106,7 @@ class DataRequestHandler(IPythonHandler):
             key, kernel_id, entry, authenticated,
         )
 
-        kc = km.client()
+        kc = km.client(session = self.registry.get_session(kernel_id))
 
         content = dict(
             method = 'GET',
