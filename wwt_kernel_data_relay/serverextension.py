@@ -23,7 +23,7 @@ class Registry(LoggingConfigurable):
     """
 
     def __init__(self):
-        self._kid_to_session = {}
+        self._kid_to_client = {}
         self._key_to_kid = {}
         self._mid_to_buffer = {}
 
@@ -42,8 +42,10 @@ class Registry(LoggingConfigurable):
             key = km.session.key,
         )
 
+        kc = km.client(session=session)
+        self._kid_to_client[kernel_id] = kc
+
         stream = km.connect_iopub()
-        self._kid_to_session[kernel_id] = session
         self.log_debug('watching kernel %s in session %s', kernel_id, session.session)
 
         def watch_iopubs(msg_list):
@@ -65,8 +67,18 @@ class Registry(LoggingConfigurable):
     def get_kernel_id(self, key):
         return self._key_to_kid.get(key)
 
-    def get_session(self, kernel_id):
-        return self._kid_to_session.get(kernel_id)
+    def get_client(self, mkm, kernel_id):
+        # Hack (I think?) to check if the kernel is still alive
+        try:
+            km = mkm.get_kernel(kernel_id)
+        except Exception as e:
+            try:
+                del self._kid_to_client[kernel_id]
+            except KeyError:
+                pass
+            return None
+
+        return self._kid_to_client.get(kernel_id)
 
     async def get_next_reply(self, msg_id, kc):
         """
@@ -109,13 +121,13 @@ class Registry(LoggingConfigurable):
                 else:
                     raise
 
-            # OK, we got a reply. Is it for us?
-            reply_mid = reply['parent_header'].get('msg_id')
-            if reply_mid == msg_id:
-                return reply  # yes! All done.
+            # OK, we got a reply. It might even be for us. But even if it is,
+            # someone else might have buffered a *different*, earlier reply
+            # intended for us. So the only tractable way to ensure that
+            # everything stays ordered is to always use the buffer.
 
-            # If we're still here, we got a reply to someone *else*'s message.
-            # Buffer it up, if possible.
+            reply_mid = reply['parent_header'].get('msg_id')
+
             if reply_mid is None:
                 self.log_warning('dropping message on floor because it has no parent_id: %s', reply)
             else:
@@ -158,21 +170,18 @@ class DataRequestHandler(IPythonHandler):
             self.finish(f'unrecognized WWTKDR key {key!r}')
             return
 
-        try:
-            km = self.kernel_manager.get_kernel(kernel_id)
-        except Exception as e:
-            self.clear()
-            self.set_status(404)
-            self.registry.log_warning(f'could not get kernel for WWTKDR key {key!r}: {e}')
-            self.finish(f'could not get kernel for WWTKDR key {key!r}: {e}')
-            return
-
         self.registry.log_debug(
             'GET key=%s kernel_id=%s entry=%s authenticated=%s',
             key, kernel_id, entry, authenticated,
         )
 
-        kc = km.client(session = self.registry.get_session(kernel_id))
+        kc = self.registry.get_client(self.kernel_manager, kernel_id)
+        if kc is None:
+            self.clear()
+            self.set_status(404)
+            self.registry.log_warning(f'could not get kernel client for WWTKDR key {key!r}')
+            self.finish(f'could not get kernel client for WWTKDR key {key!r}')
+            return
 
         content = dict(
             method = 'GET',
