@@ -67,8 +67,7 @@ class DataRequestHandler(IPythonHandler):
     def initialize(self, registry):
         self.registry = registry
 
-    @gen.coroutine
-    def get(self, key, entry):
+    async def get(self, key, entry):
         """
         Note that Tornado will already apply some URL normalization before we
         get to this point. In particular, some constructs like `/foo/../bar`
@@ -116,7 +115,12 @@ class DataRequestHandler(IPythonHandler):
 
         while keep_going:
             try:
-                reply = yield kc.get_shell_msg(timeout=10)
+                # Depending on where we're being run, our kernel client may or
+                # may not be async. I'm not aware of a way to ensure that the
+                # client is async
+                reply = kc.get_shell_msg(timeout=10)
+                if not isinstance(reply, dict):
+                    reply = await reply
             except Empty:
                 self.clear()
                 self.set_status(500)
