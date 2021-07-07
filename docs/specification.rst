@@ -89,7 +89,10 @@ decoded: if the literal URL text is ``my%2Fkey``, the value if ``$key`` will be
 
 The ``$entry`` string identifies the resource being requested. The relay is not
 responsible for, or capable of, checking its validity. The value is merely
-extracted from the URL and relayed to the kernel.
+extracted from the URL and relayed to the kernel. Due to the way that the
+Tornado framework works, there are some normalizations that are applied before
+the KDR can do anything about it: ``foo/../bar`` becomes ``bar``, and ``./foo``
+becomes ``foo``. But other constructs, such as ``foo//bar``, are not normalized.
 
 The ``$authenticated`` boolean indicates whether the request is coming from an
 authenticated client, as determined by the Tornado framework. It is up to the

@@ -69,6 +69,13 @@ class DataRequestHandler(IPythonHandler):
 
     @gen.coroutine
     def get(self, key, entry):
+        """
+        Note that Tornado will already apply some URL normalization before we
+        get to this point. In particular, some constructs like `/foo/../bar`
+        will be converted to `/bar`. `foo//bar` will *not* be normalized,
+        though, nor will trailing `/.` terms.
+        """
+
         authenticated = bool(self.current_user)
 
         kernel_id = self.registry.get(key)
