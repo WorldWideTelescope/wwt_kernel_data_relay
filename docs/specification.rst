@@ -78,6 +78,7 @@ structure:
   {
     'method': 'GET',
     'authenticated': $authenticated:bool,
+    'url': $url:str,
     'key': $key:str,
     'entry': $entry:str
   }
@@ -87,12 +88,17 @@ claim more than one key, it is needed for disambiguation. The key value has been
 decoded: if the literal URL text is ``my%2Fkey``, the value if ``$key`` will be
 ``my/key``.
 
+The ``$url`` string gives the absolute URL of the HTTP request. Due to the way
+that the Tornado framework works, there are some normalizations that are applied
+before the KDR can do anything about it: ``foo/../bar`` becomes ``bar``, and
+``./foo`` becomes ``foo``. But other constructs, such as ``foo//bar``, are not
+normalized.
+
 The ``$entry`` string identifies the resource being requested. The relay is not
-responsible for, or capable of, checking its validity. The value is merely
-extracted from the URL and relayed to the kernel. Due to the way that the
-Tornado framework works, there are some normalizations that are applied before
-the KDR can do anything about it: ``foo/../bar`` becomes ``bar``, and ``./foo``
-becomes ``foo``. But other constructs, such as ``foo//bar``, are not normalized.
+responsible for, or capable of, checking its validity. For the time being, the
+value is merely extracted from the URL and relayed to the kernel, including the
+normalizations described above. Clients should use this value instead of trying
+to parse anything out of ``$url``.
 
 The ``$authenticated`` boolean indicates whether the request is coming from an
 authenticated client, as determined by the Tornado framework. It is up to the

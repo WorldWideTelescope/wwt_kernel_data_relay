@@ -77,6 +77,9 @@ class DataRequestHandler(IPythonHandler):
 
         authenticated = bool(self.current_user)
 
+        # This also includes the normalizations mentioned above.
+        url = self.request.full_url()
+
         kernel_id = self.registry.get(key)
         if kernel_id is None:
             self.clear()
@@ -101,6 +104,7 @@ class DataRequestHandler(IPythonHandler):
 
         content = dict(
             method = 'GET',
+            url = url,
             authenticated = authenticated,
             key = key,
             entry = entry,
