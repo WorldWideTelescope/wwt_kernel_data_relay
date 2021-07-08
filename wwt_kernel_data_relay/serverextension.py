@@ -5,9 +5,10 @@
 The WWT kernel data relay Jupyter notebook server extension.
 """
 
+import json
 from queue import Empty
 
-from tornado import gen
+from tornado import gen, web
 
 from jupyter_client.session import Session
 from notebook.utils import url_path_join
@@ -247,6 +248,19 @@ class DataRequestHandler(IPythonHandler):
         self.finish()
 
 
+class ProbeRequestHandler(IPythonHandler):
+    @web.authenticated
+    def get(self):
+        info = {
+            'status': 'ok'
+        }
+
+        self.set_status(200)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(info))
+        self.finish()
+
+
 def load_jupyter_server_extension(nb_server_app):
     """
     Initialize the server extension.
@@ -257,17 +271,19 @@ def load_jupyter_server_extension(nb_server_app):
 
     web_app = nb_server_app.web_app
     host_pattern = '.*$'
-    route_pattern = url_path_join(web_app.settings['base_url'], '/wwtkdr/([^/]*)/(.*)')
+    probe_route_pattern = url_path_join(web_app.settings['base_url'], '/wwtkdr/_probe')
+    data_route_pattern = url_path_join(web_app.settings['base_url'], '/wwtkdr/([^/]*)/(.*)')
 
     # The registry of kernels and URL "keys". Also slightly overloaded to
     # contain our logger.
 
     registry = Registry()
 
-    # Register our handler that will relay requests for data files.
+    # Register handlers.
 
     web_app.add_handlers(host_pattern, [
-        (route_pattern, DataRequestHandler, {'registry': registry}),
+        (probe_route_pattern, ProbeRequestHandler),
+        (data_route_pattern, DataRequestHandler, {'registry': registry}),
     ])
 
     # In order for the registry to be notified of when a kernel has requested a

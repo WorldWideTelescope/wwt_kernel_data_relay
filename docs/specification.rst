@@ -27,7 +27,8 @@ different kinds of proxies or redirectors in place that prevent either the
 kernel *or* the server from knowing the true, actual public URL at which their
 content is ultimately made available. The only way to reliably construct a fully
 absolute URL is in the frontend JavaScript code, by combining a KDR URL with the
-current window's ``location``.
+current window's ``location``, or in a server request handler where the request
+origin is specified.
 
 The ``key`` is a unique identifier associated with exactly one Jupyter kernel. A
 running kernel must “claim” a key before any data it publishes will be
@@ -56,7 +57,9 @@ form:
   }
 
 Where ``$key`` is the key being claimed by the kernel. This value should not be
-empty and it should *not* be URL-escaped.
+empty and it should *not* be URL-escaped. If the claimed key is illegal (e.g. it
+starts with an underscore) or the claim message is otherwise invalid, it is
+ignored by the server.
 
 .. _IOPub socket: https://jupyter-client.readthedocs.io/en/stable/messaging.html
 
@@ -152,3 +155,31 @@ that will be relayed to the requesting client. The ``$httpHeaders`` field should
 be a list of sub-lists, each sub-list consisting of two strings: an HTTP header
 name and a header value. These will be included in the HTTP response issued by
 the relay, and should include fields such as ``Content-Type``.
+
+
+Support Interfaces
+==================
+
+The KDR provides one additional support API. New APIs, or extensions to existing
+APIs, may be added in the future.
+
+Probe API
+---------
+
+A request to the following URL may be used by a frontend to probe whether the
+KDR server extension is available:
+
+.. code-block::
+
+  {base-url}/wwtkdr/_probe
+
+If the extension is installed, the following JSON content will be returned:
+
+.. code-block::
+
+  {
+    'status': 'ok'
+  }
+
+This API is marked as requiring authentication, so it must be accessed from a
+session that is logged into the current Jupyter session.
