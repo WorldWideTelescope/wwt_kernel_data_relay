@@ -58,6 +58,8 @@ class Registry(LoggingConfigurable):
 
                 if not key:
                     self.log_warning('missing/empty key specified in claim by kernel %s', kernel_id)
+                elif key.startswith('_'):
+                    self.log_warning('kernel %s attempted to claim reserved key %s', kernel_id, key)
                 else:
                     self.log_debug('key %s claimed by kernel %s', key, kernel_id)
                     self._key_to_kid[key] = kernel_id
@@ -89,8 +91,8 @@ class Registry(LoggingConfigurable):
         handlers get the data they need.
 
         This will raise queue.Empty if there really seems to be no next reply.
-
         """
+
         tries = 0
 
         while True:

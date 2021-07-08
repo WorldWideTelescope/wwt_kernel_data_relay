@@ -34,7 +34,8 @@ running kernel must “claim” a key before any data it publishes will be
 accessible. Later on, a different kernel can override the claim and take over
 the association between key and kernel; this functionality is required so that
 URLs have the possibility of continuing to work across kernel restarts. A single
-kernel may claim multiple keys.
+kernel may claim multiple keys. Keys starting with an underscore character
+(``_``) are reserved and may not be claimed.
 
 The ``entry...`` identifies resources published by a specific kernel. The
 structure and semantics of the ``entry`` portion of the URL are unspecified;
