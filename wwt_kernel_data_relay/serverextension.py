@@ -192,6 +192,14 @@ class DataRequestHandler(IPythonHandler):
             authenticated = authenticated,
             key = key,
             entry = entry,
+
+            # Special marker for "expedited" processing in pywwt Jupyter
+            # clients, needed to make it possible for those clients to process
+            # such requests while evaluating async Python code. Without this,
+            # the user can't use an async command to ask the frontend to load a
+            # WTML file describing tiled data, because the kernel won't be able
+            # to process the KDR data request.
+            data = {'content': {'_pywwtExpedite': True}},
         )
         msg = kc.session.msg('wwtkdr_resource_request', content)
         msg_id = msg['header']['msg_id']
