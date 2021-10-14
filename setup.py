@@ -60,7 +60,12 @@ setup_args = dict(
     ],
     include_package_data = True,
 
-    install_requires = [],
+    install_requires = [
+        'jupyter-client>=7',
+        'notebook>=6',
+        'tornado>=6',
+        'traitlets>=5',
+    ],
 
     extras_require = {
         'test': [
