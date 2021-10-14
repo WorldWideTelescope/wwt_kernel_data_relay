@@ -1,3 +1,4 @@
+[![Build Status](https://dev.azure.com/aasworldwidetelescope/WWT/_apis/build/status/WorldWideTelescope.wwt_kernel_data_relay?branchName=master)](https://dev.azure.com/aasworldwidetelescope/WWT/_build/latest?definitionId=27&branchName=master)
 
 # WWT Kernel Data Relay
 
