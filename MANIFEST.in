@@ -1,10 +1,14 @@
+include CHANGELOG.md
 include LICENSE
+include README.md
 include .coveragerc
 include *.md
 include *.yml
 
 graft docs
 prune docs/_build
+
+recursive-include jupyter-config *.json
 
 graft wwt_kernel_data_relay/tests
 
