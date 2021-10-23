@@ -1,0 +1,7 @@
+{
+  "NotebookApp": {
+    "nbserver_extensions": {
+      "wwt_kernel_data_relay": true
+    }
+  }
+}
