@@ -53,6 +53,7 @@ jobs:
       conda config --add channels conda-forge
       conda install -y \
         jupyter_client \
+        jupyter-packaging \
         notebook \
         tornado \
         traitlets
