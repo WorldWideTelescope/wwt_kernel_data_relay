@@ -15,7 +15,7 @@ from notebook.utils import url_path_join
 from notebook.base.handlers import IPythonHandler
 from traitlets.config.configurable import LoggingConfigurable
 
-__all__ = ['load_jupyter_server_extension']
+__all__ = ["load_jupyter_server_extension"]
 
 
 class Registry(LoggingConfigurable):
@@ -29,40 +29,44 @@ class Registry(LoggingConfigurable):
         self._mid_to_buffer = {}
 
     def log_debug(self, fmt, *args):
-        self.log.debug('wwt_kernel_data_relay | ' + fmt, *args)
+        self.log.debug("wwt_kernel_data_relay | " + fmt, *args)
 
     def log_info(self, fmt, *args):
-        self.log.info('wwt_kernel_data_relay | ' + fmt, *args)
+        self.log.info("wwt_kernel_data_relay | " + fmt, *args)
 
     def log_warning(self, fmt, *args):
-        self.log.warning('wwt_kernel_data_relay | ' + fmt, *args)
+        self.log.warning("wwt_kernel_data_relay | " + fmt, *args)
 
     def watch_new_kernel(self, kernel_id, km):
         session = Session(
-            config = km.session.config,
-            key = km.session.key,
+            config=km.session.config,
+            key=km.session.key,
         )
 
         kc = km.client(session=session)
         self._kid_to_client[kernel_id] = kc
 
         stream = km.connect_iopub()
-        self.log_debug('watching kernel %s in session %s', kernel_id, session.session)
+        self.log_debug("watching kernel %s in session %s", kernel_id, session.session)
 
         def watch_iopubs(msg_list):
             idents, fed_msg_list = session.feed_identities(msg_list)
             msg = session.deserialize(fed_msg_list)
-            msg_type = msg['header']['msg_type']
+            msg_type = msg["header"]["msg_type"]
 
-            if msg_type == 'wwtkdr_claim_key':
-                key = msg['content'].get('key')
+            if msg_type == "wwtkdr_claim_key":
+                key = msg["content"].get("key")
 
                 if not key:
-                    self.log_warning('missing/empty key specified in claim by kernel %s', kernel_id)
-                elif key.startswith('_'):
-                    self.log_warning('kernel %s attempted to claim reserved key %s', kernel_id, key)
+                    self.log_warning(
+                        "missing/empty key specified in claim by kernel %s", kernel_id
+                    )
+                elif key.startswith("_"):
+                    self.log_warning(
+                        "kernel %s attempted to claim reserved key %s", kernel_id, key
+                    )
                 else:
-                    self.log_debug('key %s claimed by kernel %s', key, kernel_id)
+                    self.log_debug("key %s claimed by kernel %s", key, kernel_id)
                     self._key_to_kid[key] = kernel_id
 
         stream.on_recv(watch_iopubs)
@@ -129,10 +133,12 @@ class Registry(LoggingConfigurable):
             # intended for us. So the only tractable way to ensure that
             # everything stays ordered is to always use the buffer.
 
-            reply_mid = reply['parent_header'].get('msg_id')
+            reply_mid = reply["parent_header"].get("msg_id")
 
             if reply_mid is None:
-                self.log_warning('dropping message on floor because it has no parent_id: %s', reply)
+                self.log_warning(
+                    "dropping message on floor because it has no parent_id: %s", reply
+                )
             else:
                 buffer = self._mid_to_buffer.setdefault(reply_mid, [])
                 buffer.append(reply)
@@ -170,39 +176,43 @@ class DataRequestHandler(IPythonHandler):
         if kernel_id is None:
             self.clear()
             self.set_status(404)
-            self.finish(f'unrecognized WWTKDR key {key!r}')
+            self.finish(f"unrecognized WWTKDR key {key!r}")
             return
 
         self.registry.log_debug(
-            'GET key=%s kernel_id=%s entry=%s authenticated=%s',
-            key, kernel_id, entry, authenticated,
+            "GET key=%s kernel_id=%s entry=%s authenticated=%s",
+            key,
+            kernel_id,
+            entry,
+            authenticated,
         )
 
         kc = self.registry.get_client(self.kernel_manager, kernel_id)
         if kc is None:
             self.clear()
             self.set_status(404)
-            self.registry.log_warning(f'could not get kernel client for WWTKDR key {key!r}')
-            self.finish(f'could not get kernel client for WWTKDR key {key!r}')
+            self.registry.log_warning(
+                f"could not get kernel client for WWTKDR key {key!r}"
+            )
+            self.finish(f"could not get kernel client for WWTKDR key {key!r}")
             return
 
         content = dict(
-            method = 'GET',
-            url = url,
-            authenticated = authenticated,
-            key = key,
-            entry = entry,
-
+            method="GET",
+            url=url,
+            authenticated=authenticated,
+            key=key,
+            entry=entry,
             # Special marker for "expedited" processing in pywwt Jupyter
             # clients, needed to make it possible for those clients to process
             # such requests while evaluating async Python code. Without this,
             # the user can't use an async command to ask the frontend to load a
             # WTML file describing tiled data, because the kernel won't be able
             # to process the KDR data request.
-            data = {'content': {'_pywwtExpedite': True}},
+            data={"content": {"_pywwtExpedite": True}},
         )
-        msg = kc.session.msg('wwtkdr_resource_request', content)
-        msg_id = msg['header']['msg_id']
+        msg = kc.session.msg("wwtkdr_resource_request", content)
+        msg_id = msg["header"]["msg_id"]
         kc.shell_channel.send(msg)
 
         self.clear()
@@ -220,36 +230,42 @@ class DataRequestHandler(IPythonHandler):
                 self.clear()
                 self.set_status(500)
                 self.registry.log_warning(
-                    'incomplete or missing response from kernel | key=%s entry=%s kernel_id=%s msg_id=%s',
-                    key, entry, kernel_id, msg_id
+                    "incomplete or missing response from kernel | key=%s entry=%s kernel_id=%s msg_id=%s",
+                    key,
+                    entry,
+                    kernel_id,
+                    msg_id,
                 )
-                self.finish('incomplete or missing response from kernel')
+                self.finish("incomplete or missing response from kernel")
                 return
 
-            content = reply['content']
-            status = content.get('status', 'unspecified')
+            content = reply["content"]
+            status = content.get("status", "unspecified")
 
-            if status != 'ok':
+            if status != "ok":
                 self.registry.finish_reply_buffering(msg_id)
                 self.clear()
                 self.set_status(500)
-                msg = content.get('evalue', 'unspecified kernel error')
+                msg = content.get("evalue", "unspecified kernel error")
                 self.registry.log_warning(
-                    'kernel internal error | %s | key=%s entry=%s kernel_id=%s',
-                    msg, key, entry, kernel_id,
+                    "kernel internal error | %s | key=%s entry=%s kernel_id=%s",
+                    msg,
+                    key,
+                    entry,
+                    kernel_id,
                 )
                 self.finish(msg)
                 return
 
             if first:
-                self.set_status(content['http_status'])
-                for name, value in content['http_headers']:
+                self.set_status(content["http_status"])
+                for name, value in content["http_headers"]:
                     self.set_header(name, value)
                 first = False
 
-            keep_going = content['more'] and len(reply['buffers'])
+            keep_going = content["more"] and len(reply["buffers"])
 
-            for buf in reply['buffers']:
+            for buf in reply["buffers"]:
                 self.write(bytes(buf))
 
         self.registry.finish_reply_buffering(msg_id)
@@ -259,12 +275,10 @@ class DataRequestHandler(IPythonHandler):
 class ProbeRequestHandler(IPythonHandler):
     @web.authenticated
     def get(self):
-        info = {
-            'status': 'ok'
-        }
+        info = {"status": "ok"}
 
         self.set_status(200)
-        self.set_header('Content-Type', 'application/json')
+        self.set_header("Content-Type", "application/json")
         self.write(json.dumps(info))
         self.finish()
 
@@ -278,9 +292,11 @@ def load_jupyter_server_extension(nb_server_app):
     """
 
     web_app = nb_server_app.web_app
-    host_pattern = '.*$'
-    probe_route_pattern = url_path_join(web_app.settings['base_url'], '/wwtkdr/_probe')
-    data_route_pattern = url_path_join(web_app.settings['base_url'], '/wwtkdr/([^/]*)/(.*)')
+    host_pattern = ".*$"
+    probe_route_pattern = url_path_join(web_app.settings["base_url"], "/wwtkdr/_probe")
+    data_route_pattern = url_path_join(
+        web_app.settings["base_url"], "/wwtkdr/([^/]*)/(.*)"
+    )
 
     # The registry of kernels and URL "keys". Also slightly overloaded to
     # contain our logger.
@@ -289,16 +305,19 @@ def load_jupyter_server_extension(nb_server_app):
 
     # Register handlers.
 
-    web_app.add_handlers(host_pattern, [
-        (probe_route_pattern, ProbeRequestHandler),
-        (data_route_pattern, DataRequestHandler, {'registry': registry}),
-    ])
+    web_app.add_handlers(
+        host_pattern,
+        [
+            (probe_route_pattern, ProbeRequestHandler),
+            (data_route_pattern, DataRequestHandler, {"registry": registry}),
+        ],
+    )
 
     # In order for the registry to be notified of when a kernel has requested a
     # URL prefix, we need to shim ourselves into the kernel startup framework
     # and register a message listener.
 
-    registry.log_info('shimming into notebook startup')
+    registry.log_info("shimming into notebook startup")
     app_km = nb_server_app.kernel_manager
     orig_start_watching_activity = app_km.start_watching_activity
 
