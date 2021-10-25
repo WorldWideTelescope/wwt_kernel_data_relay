@@ -50,7 +50,7 @@ data_files_spec = [
 
 setup_args = dict(
     name="wwt_kernel_data_relay",  # cranko project-name
-    version="0.1.1",  # cranko project-version
+    version="0.2.0",  # cranko project-version
     description="Jupyter server extension to allow kernels to make data web-accessible",
     long_description=get_long_desc(),
     long_description_content_type="text/markdown",
