@@ -18,6 +18,31 @@ from traitlets.config.configurable import LoggingConfigurable
 __all__ = ["load_jupyter_server_extension"]
 
 
+class SequencedBuffer(object):
+    def __init__(self):
+        self.next_seq = 0
+        self.by_seq = {}
+
+    def try_get_next(self):
+        try:
+            item = self.by_seq.pop(self.next_seq)
+        except KeyError:
+            return None
+
+        self.next_seq += 1
+        return item
+
+    def accumulate(self, reply, log_object):
+        seq = reply["content"].get("seq")
+        if seq is None:
+            log_object.log_warning("dropping message %r", reply)
+            return
+
+        # ignore old, duplicated messages
+        if seq >= self.next_seq:
+            self.by_seq[seq] = reply
+
+
 class Registry(LoggingConfigurable):
     """
     A registry of kernels that have expressed an interest in publishing data files.
@@ -106,7 +131,9 @@ class Registry(LoggingConfigurable):
             # gotten a message and buffered it while we were waiting.
             buffer = self._mid_to_buffer.get(msg_id)
             if buffer:
-                return buffer.pop(0)
+                reply = buffer.try_get_next()
+                if reply is not None:
+                    return reply
 
             # Nothing in our private buffer. Ask the kernel client.
             #
@@ -140,8 +167,10 @@ class Registry(LoggingConfigurable):
                     "dropping message on floor because it has no parent_id: %s", reply
                 )
             else:
-                buffer = self._mid_to_buffer.setdefault(reply_mid, [])
-                buffer.append(reply)
+                buffer = self._mid_to_buffer.get(reply_mid)
+                if buffer is None:
+                    self._mid_to_buffer[reply_mid] = buffer = SequencedBuffer()
+                buffer.accumulate(reply, self)
 
         # we never break out of the loop.
 
