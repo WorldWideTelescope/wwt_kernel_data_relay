@@ -124,6 +124,7 @@ The JSON content of the *every* reply message should contain the following field
 
   {
     'status': $status:str,
+    'seq': $seq:int,
     'more': $more:bool
   }
 
@@ -145,6 +146,11 @@ jupyter_client documentation`_. The value of the ``evalue`` JSON field, if
 present, will be relayed to the requestor as part of an HTTP 500 error.
 
 .. _the jupyter_client documentation: https://jupyter-client.readthedocs.io/en/stable/messaging.html#request-reply
+
+The ``$seq`` field gives a sequence number for each reply message, starting at
+zero and increasing by one with each reply. This is needed because some
+implementations of the Jupyter messaging protocol don't guarantee in-order
+message delivery.
 
 The ``$more`` field indicates whether more reply messages will be sent. If your
 implementation doesn't "know" when the last reply will be sent until all data
