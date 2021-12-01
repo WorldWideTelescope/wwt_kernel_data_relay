@@ -35,9 +35,7 @@ class SequencedBuffer(object):
     def accumulate(self, reply, log_object):
         seq = reply["content"].get("seq")
         if seq is None:
-            log_object.log_warning("dropping message %r", reply)
-            return
-
+            seq = 0
         # ignore old, duplicated messages
         if seq >= self.next_seq:
             self.by_seq[seq] = reply
@@ -120,7 +118,7 @@ class Registry(LoggingConfigurable):
         replies to *other* requests, which need to be buffered so that those
         handlers get the data they need.
 
-        This will raise queue.Empty if there really seems to be no next reply.
+        This will raise queue. Empty if there really seems to be no next reply.
         """
 
         tries = 0
