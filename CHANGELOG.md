@@ -1,3 +1,13 @@
+# wwt_kernel_data_relay 0.3.0 (2023-08-18)
+
+- Add support for JupyterLab 4 / Notebook v7 (#5, @pkgw). Support for older
+  versions should remain unchanged. This is basically just a matter of trying to
+  pull in some dependencies from newer locations before falling back to older
+  ones.
+- Some branding / contact info updates for the sponsorship migration (#5,
+  @pkgw).
+
+
 # wwt_kernel_data_relay 0.2.0 (2021-10-25)
 
 - Require and use message sequencing numbers in kernel replies (#2, @pkgw).

@@ -50,15 +50,15 @@ data_files_spec = [
 
 setup_args = dict(
     name="wwt_kernel_data_relay",  # cranko project-name
-    version="0.2.0",  # cranko project-version
+    version="0.3.0",  # cranko project-version
     description="Jupyter server extension to allow kernels to make data web-accessible",
     long_description=get_long_desc(),
     long_description_content_type="text/markdown",
     url="https://github.com/WorldWideTelescope/wwt_kernel_data_relay/",
     license="MIT",
     platforms="Linux, Mac OS X, Windows",
-    author="AAS WorldWide Telescope Team",
-    author_email="wwt@aas.org",
+    author="WorldWide Telescope Team",
+    author_email="hello@worldwidetelescope.org",
     classifiers=[
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
@@ -71,12 +71,11 @@ setup_args = dict(
     ],
     packages=[
         "wwt_kernel_data_relay",
-        #'wwt_kernel_data_relay.tests',
     ],
     include_package_data=True,
     install_requires=[
         "jupyter-client>=7",
-        "notebook>=6",
+        "jupyter-server>=2",
         "tornado>=6",
         "traitlets>=5",
     ],

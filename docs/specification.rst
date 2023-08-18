@@ -20,7 +20,7 @@ The URLs that are ultimately provided by the KDR have the form:
 
   {base-url}/wwtkdr/{key}/{entry...}
 
-Here, ``base-url`` is the base URL of the Jupyter notebook server, which is
+Here, ``base-url`` is the base URL of the Jupyter server, which is
 easily determined on the server side and is not-so-easily determined on the
 kernel side. The base URL is not necessarily absolute, however, and there may be
 different kinds of proxies or redirectors in place that prevent either the
@@ -115,7 +115,7 @@ JSON content, the *first* reply message must contain additional fields
 (analogous to HTTP header data). Every reply message, except for the last one,
 must also be associated with one or more byte buffers, which contain the
 resource binary content to be returned to the client that has connected to the
-notebook server. The final reply message is allowed to arrive without any
+server. The final reply message is allowed to arrive without any
 associated buffers.
 
 The JSON content of the *every* reply message should contain the following fields:

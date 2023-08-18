@@ -1,4 +1,4 @@
-# Copyright 2021 the .NET Foundation
+# Copyright 2021-2023 the .NET Foundation
 # Licensed under the MIT License
 
 """
@@ -8,11 +8,18 @@ The WWT kernel data relay Jupyter notebook server extension.
 import json
 from queue import Empty
 
-from tornado import gen, web
+from tornado import web
 
 from jupyter_client.session import Session
-from notebook.utils import url_path_join
-from notebook.base.handlers import IPythonHandler
+
+try:
+    from jupyter_server.utils import url_path_join
+    from jupyter_server.base.handlers import JupyterHandler
+except ImportError:
+    # `notebook` <= 6
+    from notebook.utils import url_path_join
+    from notebook.base.handlers import IPythonHandler as JupyterHandler
+
 from traitlets.config.configurable import LoggingConfigurable
 
 __all__ = ["load_jupyter_server_extension"]
@@ -75,7 +82,7 @@ class Registry(LoggingConfigurable):
         self.log_debug("watching kernel %s in session %s", kernel_id, session.session)
 
         def watch_iopubs(msg_list):
-            idents, fed_msg_list = session.feed_identities(msg_list)
+            _idents, fed_msg_list = session.feed_identities(msg_list)
             msg = session.deserialize(fed_msg_list)
             msg_type = msg["header"]["msg_type"]
 
@@ -184,7 +191,7 @@ class Registry(LoggingConfigurable):
             pass
 
 
-class DataRequestHandler(IPythonHandler):
+class DataRequestHandler(JupyterHandler):
     def initialize(self, registry):
         self.registry = registry
 
@@ -301,7 +308,7 @@ class DataRequestHandler(IPythonHandler):
         self.finish()
 
 
-class ProbeRequestHandler(IPythonHandler):
+class ProbeRequestHandler(JupyterHandler):
     @web.authenticated
     def get(self):
         info = {"status": "ok"}
@@ -312,7 +319,7 @@ class ProbeRequestHandler(IPythonHandler):
         self.finish()
 
 
-def load_jupyter_server_extension(nb_server_app):
+def _load_jupyter_server_extension(nb_server_app):
     """
     Initialize the server extension.
 
@@ -356,3 +363,7 @@ def load_jupyter_server_extension(nb_server_app):
         registry.watch_new_kernel(kernel_id, km)
 
     app_km.start_watching_activity = shimmed_start_watching_activity
+
+
+# Backwards compatibility
+load_jupyter_server_extension = _load_jupyter_server_extension

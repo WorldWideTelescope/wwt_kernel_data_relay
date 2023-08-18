@@ -9,7 +9,7 @@ functionality is used by `pywwt`_ to expose kernel-side data assets for
 visualization inside the `WWT research app`_.
 
 .. _wwt_kernel_data_relay: https://github.com/WorldWideTelescope/wwt_kernel_data_relay/
-.. _Jupyter server extension: https://jupyter-notebook.readthedocs.io/en/stable/extending/handlers.html
+.. _Jupyter server extension: https://jupyter-server.readthedocs.io/en/stable/developers/extensions.html
 .. _Jupyter kernels: https://jupyter.readthedocs.io/en/latest/projects/kernels.html
 .. _pywwt: https://pywwt.readthedocs.io/
 .. _WWT research app: https://docs.worldwidetelescope.org/research-app/latest/
@@ -37,14 +37,12 @@ issue `on its GitHub repository
 Acknowledgments
 ===============
 
-`wwt_kernel_data_relay`_ is part of the `AAS`_ `WorldWide Telescope`_ system, a
-`.NET Foundation`_ project managed by the non-profit `American Astronomical
-Society`_ (AAS). Work on WWT has been supported by the AAS, the US `National
-Science Foundation`_, and other partners. See `the WWT user website`_ for
-details.
+`wwt_kernel_data_relay`_ is part of the `WorldWide Telescope`_ system, a `.NET
+Foundation`_ project. Work on WWT has been supported by the `American
+Astronomical Society`_ (AAS), the US `National Science Foundation`_, and other
+partners. See `the WWT user website`_ for details.
 
 .. _.NET Foundation: https://dotnetfoundation.org/
-.. _AAS: https://aas.org/
 .. _WorldWide Telescope: https://worldwidetelescope.org/home/
 .. _American Astronomical Society: https://aas.org/
 .. _National Science Foundation: https://www.nsf.gov/

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 project = 'wwt_kernel_data_relay'
-author = 'The AAS WorldWide Telescope Team'
-copyright = '2019-2021 the .NET Foundation'
+author = 'The WorldWide Telescope Team'
+copyright = '2019-2023 the .NET Foundation'
 
 release = '0.dev0'  # cranko project-version
 version = '.'.join(release.split('.')[:2])
@@ -21,7 +21,7 @@ extensions = [
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
-language = None
+language = 'en'
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 todo_include_todos = False
