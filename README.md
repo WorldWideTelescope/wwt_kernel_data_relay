@@ -11,7 +11,7 @@ Telescope] Python library, to expose kernel-side data assets for visualization
 inside the WWT [research app][rapp].
 
 [wwt_kernel_data_relay]: https://github.com/WorldWideTelescope/wwt_kernel_data_relay/
-[ext]: https://jupyter-notebook.readthedocs.io/en/stable/extending/handlers.html
+[ext]: https://jupyter-server.readthedocs.io/en/stable/developers/extensions.html
 [kernels]: https://jupyter.readthedocs.io/en/latest/projects/kernels.html
 [pywwt]: https://pywwt.readthedocs.io/
 [AAS]: https://aas.org/
@@ -56,7 +56,11 @@ maintained by
 ## Dependencies
 
 [wwt_kernel_data_relay] is a [Jupyter server extension][ext] so it is only
-useful if the Jupyter [notebook] package is installed.
+useful if the Jupyter [jupyter_server] package is installed.
+
+[jupyter_server]: https://jupyter-server.readthedocs.io/
+
+It also is compatible with the older (version <= 6) [notebook] server package.
 
 [notebook]: https://jupyter-notebook.readthedocs.io/
 

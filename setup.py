@@ -71,12 +71,11 @@ setup_args = dict(
     ],
     packages=[
         "wwt_kernel_data_relay",
-        #'wwt_kernel_data_relay.tests',
     ],
     include_package_data=True,
     install_requires=[
         "jupyter-client>=7",
-        "notebook>=6",
+        "jupyter-server>=2",
         "tornado>=6",
         "traitlets>=5",
     ],

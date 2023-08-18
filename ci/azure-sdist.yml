@@ -53,8 +53,8 @@ jobs:
       conda config --add channels conda-forge
       conda install -y \
         jupyter_client \
+        jupyter_server \
         jupyter-packaging \
-        notebook \
         tornado \
         traitlets
     displayName: Set up dependencies
