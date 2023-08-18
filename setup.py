@@ -57,8 +57,8 @@ setup_args = dict(
     url="https://github.com/WorldWideTelescope/wwt_kernel_data_relay/",
     license="MIT",
     platforms="Linux, Mac OS X, Windows",
-    author="AAS WorldWide Telescope Team",
-    author_email="wwt@aas.org",
+    author="WorldWide Telescope Team",
+    author_email="hello@worldwidetelescope.org",
     classifiers=[
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
