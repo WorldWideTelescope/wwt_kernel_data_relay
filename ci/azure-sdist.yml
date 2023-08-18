@@ -7,7 +7,7 @@ jobs:
 
 - job: sdist
   pool:
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-latest
 
   steps:
 
@@ -53,8 +53,8 @@ jobs:
       conda config --add channels conda-forge
       conda install -y \
         jupyter_client \
+        jupyter_server \
         jupyter-packaging \
-        notebook \
         tornado \
         traitlets
     displayName: Set up dependencies

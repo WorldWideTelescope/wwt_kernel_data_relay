@@ -9,6 +9,9 @@ It contains no nontrivial functionality of its own.
 
 from .serverextension import load_jupyter_server_extension  # noqa
 
-# See: https://jupyter-notebook.readthedocs.io/en/stable/examples/Notebook/Distributing%20Jupyter%20Extensions%20as%20Python%20Packages.html
-def _jupyter_server_extension_paths():
+# See: https://jupyter.readthedocs.io/en/latest/projects/kernels.html
+def _jupyter_server_extension_points():
     return [{"module": "wwt_kernel_data_relay.serverextension"}]
+
+# Backwards compatibility
+_jupyter_server_extension_paths = _jupyter_server_extension_points

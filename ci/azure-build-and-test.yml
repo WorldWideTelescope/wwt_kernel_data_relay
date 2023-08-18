@@ -6,17 +6,17 @@ parameters:
   default:
 
   - name: linux_39
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-22.04
     vars:
       PYTHON_SERIES: "3.9"
 
   - name: macos_39
-    vmImage: macos-10.15
+    vmImage: macos-12
     vars:
       PYTHON_SERIES: "3.9"
 
   - name: windows_39
-    vmImage: windows-2019
+    vmImage: windows-2022
     vars:
       PYTHON_SERIES: "3.9"
 
@@ -54,7 +54,7 @@ jobs:
 
 - job: docs
   pool:
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-latest
   steps:
   - template: azure-job-setup.yml
     parameters:

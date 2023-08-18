@@ -6,12 +6,12 @@
 [wwt_kernel_data_relay] is a [Jupyter server extension][ext] that enables
 [Jupyter kernels][kernels] to publish some of their data files to the Web; that
 is, to request that the Jupyter HTTP server make them accessible at a
-predictable URL. This functionality is used by [pywwt], the [AAS] [WorldWide
+predictable URL. This functionality is used by [pywwt], the [WorldWide
 Telescope] Python library, to expose kernel-side data assets for visualization
 inside the WWT [research app][rapp].
 
 [wwt_kernel_data_relay]: https://github.com/WorldWideTelescope/wwt_kernel_data_relay/
-[ext]: https://jupyter-notebook.readthedocs.io/en/stable/extending/handlers.html
+[ext]: https://jupyter-server.readthedocs.io/en/stable/developers/extensions.html
 [kernels]: https://jupyter.readthedocs.io/en/latest/projects/kernels.html
 [pywwt]: https://pywwt.readthedocs.io/
 [AAS]: https://aas.org/
@@ -56,7 +56,11 @@ maintained by
 ## Dependencies
 
 [wwt_kernel_data_relay] is a [Jupyter server extension][ext] so it is only
-useful if the Jupyter [notebook] package is installed.
+useful if the Jupyter [jupyter_server] package is installed.
+
+[jupyter_server]: https://jupyter-server.readthedocs.io/
+
+It also is compatible with the older (version <= 6) [notebook] server package.
 
 [notebook]: https://jupyter-notebook.readthedocs.io/
 
@@ -69,10 +73,10 @@ useful if the Jupyter [notebook] package is installed.
 
 ## Acknowledgments
 
-[wwt_kernel_data_relay] is part of the AAS WorldWide Telescope system, a [.NET
-Foundation] project managed by the non-profit [American Astronomical Society]
-(AAS). Work on WWT has been supported by the AAS, the US [National Science
-Foundation], and other partners. See [the WWT user website][acks] for details.
+[wwt_kernel_data_relay] is part of the WorldWide Telescope system, a [.NET
+Foundation] project. Work on WWT has been supported by the [American
+Astronomical Society] (AAS), the US [National Science Foundation], and other
+partners. See [the WWT user website][acks] for details.
 
 [.NET Foundation]: https://dotnetfoundation.org/
 [American Astronomical Society]: https://aas.org/
